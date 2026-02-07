@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>F1 Racing Game</title>
+
+  <!-- MOBILE OPTIMIZATION -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <style>
     body {
       margin: 0;
       background: #111;
       color: white;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       text-align: center;
       user-select: none;
     }
@@ -18,28 +23,30 @@
     }
 
     #game {
-      width: 360px;
-      height: 600px;
+      width: 90vw;
+      max-width: 360px;
+      height: 70vh;
+      max-height: 600px;
       margin: auto;
       background: #444;
       position: relative;
       overflow: hidden;
       border: 3px solid white;
+      touch-action: none;
     }
 
-    /* ===== VISUAL LANES (NO LOGIC) ===== */
-    .lane {
-      position: absolute;
-      top: 0;
+    /* ROAD LINES (VISUAL ONLY) */
+    .road-line {
       width: 6px;
-      height: 100%;
-      background: rgba(255,255,255,0.7);
+      height: 80px;
+      background: white;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.8;
     }
 
-    .lane1 { left: 120px; }
-    .lane2 { left: 240px; }
-
-    /* ===== PLAYER ===== */
+    /* PLAYER */
     #player {
       width: 60px;
       height: 100px;
@@ -49,7 +56,7 @@
       pointer-events: none;
     }
 
-    /* ===== ENEMIES ===== */
+    /* ENEMIES */
     .enemy {
       width: 60px;
       height: 100px;
@@ -64,9 +71,11 @@
     }
 
     button {
-      font-size: 18px;
-      padding: 10px 25px;
-      margin: 5px;
+      font-size: 22px;
+      padding: 14px 30px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
     }
   </style>
 </head>
@@ -76,9 +85,9 @@
 <div id="score">Score: 0</div>
 
 <div id="game">
-  <!-- VISUAL LANES ONLY -->
-  <div class="lane lane1"></div>
-  <div class="lane lane2"></div>
+  <div class="road-line"></div>
+  <div class="road-line"></div>
+  <div class="road-line"></div>
 
   <img id="player" src="player.png">
 
@@ -93,27 +102,20 @@
   <button id="rightBtn">RIGHT ?</button>
 </div>
 
-<audio id="engine" loop>
-  <source src="https://actions.google.com/sounds/v1/transportation/car_engine.ogg">
-</audio>
-
-<audio id="crash">
-  <source src="https://actions.google.com/sounds/v1/impacts/crash.ogg">
-</audio>
-
 <script>
+  const game = document.getElementById("game");
   const player = document.getElementById("player");
   const enemies = document.querySelectorAll(".enemy");
+  const lines = document.querySelectorAll(".road-line");
   const scoreText = document.getElementById("score");
-  const engine = document.getElementById("engine");
-  const crash = document.getElementById("crash");
 
   let playerX = 150;
-  let speed = 5;
+  let speed = 4;
   let score = 0;
   let running = true;
 
-  const hitboxPadding = 15;
+  const moveStep = 12;          // smoother mobile movement
+  const hitboxPadding = 15;     // smaller hitbox (easier game)
 
   const enemyImages = [
     "enemy1.png",
@@ -125,35 +127,43 @@
   let enemyData = [];
 
   enemies.forEach((enemy, i) => {
+    enemy.src = enemyImages[i];
     enemyData.push({
       el: enemy,
       x: Math.random() * 300,
-      top: -150 * (i + 1)
+      y: -150 * (i + 1)
     });
-    enemy.src = enemyImages[i];
   });
 
-  engine.volume = 0.4;
-  engine.play();
+  let lineY = [0, 200, 400];
+  lines.forEach((line, i) => line.style.top = lineY[i] + "px");
 
   function updatePlayer() {
     player.style.left = playerX + "px";
   }
 
+  function moveLines() {
+    lines.forEach((line, i) => {
+      lineY[i] += speed;
+      if (lineY[i] > game.clientHeight) lineY[i] = -80;
+      line.style.top = lineY[i] + "px";
+    });
+  }
+
   function moveEnemies() {
     enemyData.forEach(e => {
-      e.top += speed;
-      e.el.style.top = e.top + "px";
+      e.y += speed;
+      e.el.style.top = e.y + "px";
       e.el.style.left = e.x + "px";
 
-      if (e.top > 600) {
-        e.top = -120;
-        e.x = Math.random() * 300;
+      if (e.y > game.clientHeight) {
+        e.y = -120;
+        e.x = Math.random() * (game.clientWidth - 60);
         e.el.src = enemyImages[Math.floor(Math.random() * enemyImages.length)];
         score += 10;
+        scoreText.textContent = "Score: " + score;
       }
     });
-    speed += 0.002;
   }
 
   function checkCollision() {
@@ -161,55 +171,70 @@
 
     enemyData.forEach(e => {
       const r = e.el.getBoundingClientRect();
+
       if (
         p.left + hitboxPadding < r.right - hitboxPadding &&
         p.right - hitboxPadding > r.left + hitboxPadding &&
         p.top + hitboxPadding < r.bottom - hitboxPadding &&
         p.bottom - hitboxPadding > r.top + hitboxPadding
       ) {
-        endGame();
+        running = false;
+        alert("Game Over! Score: " + score);
+        location.reload();
       }
     });
   }
 
-  function endGame() {
-    running = false;
-    engine.pause();
-    crash.play();
-    setTimeout(() => {
-      alert("Game Over! Score: " + score);
-      location.reload();
-    }, 100);
-  }
-
-  document.addEventListener("keydown", e => {
-    if (!running) return;
-    if (e.key === "ArrowLeft") playerX -= 20;
-    if (e.key === "ArrowRight") playerX += 20;
-    playerX = Math.max(0, Math.min(300, playerX));
-    updatePlayer();
-  });
-
-  document.getElementById("leftBtn").onclick = () => {
-    playerX = Math.max(0, playerX - 20);
-    updatePlayer();
-  };
-
-  document.getElementById("rightBtn").onclick = () => {
-    playerX = Math.min(300, playerX + 20);
-    updatePlayer();
-  };
-
   function gameLoop() {
     if (!running) return;
+    moveLines();
     moveEnemies();
     checkCollision();
-    scoreText.innerText = "Score: " + score;
     requestAnimationFrame(gameLoop);
   }
 
-  updatePlayer();
   gameLoop();
+
+  /* KEYBOARD */
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") playerX -= moveStep;
+    if (e.key === "ArrowRight") playerX += moveStep;
+
+    playerX = Math.max(0, Math.min(game.clientWidth - player.offsetWidth, playerX));
+    updatePlayer();
+  });
+
+  /* BUTTONS */
+  leftBtn.onclick = () => {
+    playerX -= moveStep;
+    playerX = Math.max(0, playerX);
+    updatePlayer();
+  };
+
+  rightBtn.onclick = () => {
+    playerX += moveStep;
+    playerX = Math.min(game.clientWidth - player.offsetWidth, playerX);
+    updatePlayer();
+  };
+
+  /* SWIPE CONTROL */
+  let startX = null;
+
+  game.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+  });
+
+  game.addEventListener("touchmove", e => {
+    if (!startX) return;
+    let diff = e.touches[0].clientX - startX;
+
+    if (diff > 30) playerX += moveStep;
+    if (diff < -30) playerX -= moveStep;
+
+    playerX = Math.max(0, Math.min(game.clientWidth - player.offsetWidth, playerX));
+    updatePlayer();
+    startX = null;
+  });
 </script>
 
 </body>
