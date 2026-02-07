@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>F1 Racing Game</title>
+  <title>Formula 1 Racing</title>
 
   <!-- MOBILE OPTIMIZATION -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -102,6 +102,19 @@
   <button id="rightBtn">RIGHT ?</button>
 </div>
 
+<!-- ?? SOUND EFFECTS -->
+<audio id="engine" loop>
+  <source src="https://actions.google.com/sounds/v1/transportation/car_engine.ogg">
+</audio>
+
+<audio id="crash">
+  <source src="https://actions.google.com/sounds/v1/impacts/crash.ogg">
+</audio>
+
+<audio id="click">
+  <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
+</audio>
+
 <script>
   const game = document.getElementById("game");
   const player = document.getElementById("player");
@@ -109,13 +122,17 @@
   const lines = document.querySelectorAll(".road-line");
   const scoreText = document.getElementById("score");
 
+  const engineSound = document.getElementById("engine");
+  const crashSound = document.getElementById("crash");
+  const clickSound = document.getElementById("click");
+
   let playerX = 150;
   let speed = 4;
   let score = 0;
   let running = true;
 
-  const moveStep = 12;          // smoother mobile movement
-  const hitboxPadding = 15;     // smaller hitbox (easier game)
+  const moveStep = 12;
+  const hitboxPadding = 15;
 
   const enemyImages = [
     "enemy1.png",
@@ -178,11 +195,19 @@
         p.top + hitboxPadding < r.bottom - hitboxPadding &&
         p.bottom - hitboxPadding > r.top + hitboxPadding
       ) {
-        running = false;
-        alert("Game Over! Score: " + score);
-        location.reload();
+        endGame();
       }
     });
+  }
+
+  function endGame() {
+    running = false;
+    engineSound.pause();
+    crashSound.play();
+    setTimeout(() => {
+      alert("Game Over! Score: " + score);
+      location.reload();
+    }, 200);
   }
 
   function gameLoop() {
@@ -192,6 +217,12 @@
     checkCollision();
     requestAnimationFrame(gameLoop);
   }
+
+  /* START SOUND AFTER USER INTERACTION (MOBILE RULE) */
+  document.addEventListener("click", () => {
+    engineSound.volume = 0.4;
+    engineSound.play();
+  }, { once: true });
 
   gameLoop();
 
@@ -206,18 +237,20 @@
 
   /* BUTTONS */
   leftBtn.onclick = () => {
+    clickSound.play();
     playerX -= moveStep;
     playerX = Math.max(0, playerX);
     updatePlayer();
   };
 
   rightBtn.onclick = () => {
+    clickSound.play();
     playerX += moveStep;
     playerX = Math.min(game.clientWidth - player.offsetWidth, playerX);
     updatePlayer();
   };
 
-  /* SWIPE CONTROL */
+  /* SWIPE */
   let startX = null;
 
   game.addEventListener("touchstart", e => {
