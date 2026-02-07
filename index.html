@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>F1 Racing Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+      user-select: none;
+    }
+
+    #score {
+      font-size: 20px;
+      margin: 10px;
+    }
+
+    #game {
+      width: 360px;
+      height: 600px;
+      margin: auto;
+      background: #444;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid white;
+    }
+
+    /* ===== VISUAL LANES (NO LOGIC) ===== */
+    .lane {
+      position: absolute;
+      top: 0;
+      width: 6px;
+      height: 100%;
+      background: rgba(255,255,255,0.7);
+    }
+
+    .lane1 { left: 120px; }
+    .lane2 { left: 240px; }
+
+    /* ===== PLAYER ===== */
+    #player {
+      width: 60px;
+      height: 100px;
+      position: absolute;
+      bottom: 20px;
+      left: 150px;
+      pointer-events: none;
+    }
+
+    /* ===== ENEMIES ===== */
+    .enemy {
+      width: 60px;
+      height: 100px;
+      position: absolute;
+      top: -120px;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .controls {
+      margin-top: 10px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 10px 25px;
+      margin: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="score">Score: 0</div>
+
+<div id="game">
+  <!-- VISUAL LANES ONLY -->
+  <div class="lane lane1"></div>
+  <div class="lane lane2"></div>
+
+  <img id="player" src="player.png">
+
+  <img class="enemy">
+  <img class="enemy">
+  <img class="enemy">
+  <img class="enemy">
+</div>
+
+<div class="controls">
+  <button id="leftBtn">? LEFT</button>
+  <button id="rightBtn">RIGHT ?</button>
+</div>
+
+<audio id="engine" loop>
+  <source src="https://actions.google.com/sounds/v1/transportation/car_engine.ogg">
+</audio>
+
+<audio id="crash">
+  <source src="https://actions.google.com/sounds/v1/impacts/crash.ogg">
+</audio>
+
+<script>
+  const player = document.getElementById("player");
+  const enemies = document.querySelectorAll(".enemy");
+  const scoreText = document.getElementById("score");
+  const engine = document.getElementById("engine");
+  const crash = document.getElementById("crash");
+
+  let playerX = 150;
+  let speed = 5;
+  let score = 0;
+  let running = true;
+
+  const hitboxPadding = 15;
+
+  const enemyImages = [
+    "enemy1.png",
+    "enemy2.png",
+    "enemy3.png",
+    "enemy4.png"
+  ];
+
+  let enemyData = [];
+
+  enemies.forEach((enemy, i) => {
+    enemyData.push({
+      el: enemy,
+      x: Math.random() * 300,
+      top: -150 * (i + 1)
+    });
+    enemy.src = enemyImages[i];
+  });
+
+  engine.volume = 0.4;
+  engine.play();
+
+  function updatePlayer() {
+    player.style.left = playerX + "px";
+  }
+
+  function moveEnemies() {
+    enemyData.forEach(e => {
+      e.top += speed;
+      e.el.style.top = e.top + "px";
+      e.el.style.left = e.x + "px";
+
+      if (e.top > 600) {
+        e.top = -120;
+        e.x = Math.random() * 300;
+        e.el.src = enemyImages[Math.floor(Math.random() * enemyImages.length)];
+        score += 10;
+      }
+    });
+    speed += 0.002;
+  }
+
+  function checkCollision() {
+    const p = player.getBoundingClientRect();
+
+    enemyData.forEach(e => {
+      const r = e.el.getBoundingClientRect();
+      if (
+        p.left + hitboxPadding < r.right - hitboxPadding &&
+        p.right - hitboxPadding > r.left + hitboxPadding &&
+        p.top + hitboxPadding < r.bottom - hitboxPadding &&
+        p.bottom - hitboxPadding > r.top + hitboxPadding
+      ) {
+        endGame();
+      }
+    });
+  }
+
+  function endGame() {
+    running = false;
+    engine.pause();
+    crash.play();
+    setTimeout(() => {
+      alert("Game Over! Score: " + score);
+      location.reload();
+    }, 100);
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!running) return;
+    if (e.key === "ArrowLeft") playerX -= 20;
+    if (e.key === "ArrowRight") playerX += 20;
+    playerX = Math.max(0, Math.min(300, playerX));
+    updatePlayer();
+  });
+
+  document.getElementById("leftBtn").onclick = () => {
+    playerX = Math.max(0, playerX - 20);
+    updatePlayer();
+  };
+
+  document.getElementById("rightBtn").onclick = () => {
+    playerX = Math.min(300, playerX + 20);
+    updatePlayer();
+  };
+
+  function gameLoop() {
+    if (!running) return;
+    moveEnemies();
+    checkCollision();
+    scoreText.innerText = "Score: " + score;
+    requestAnimationFrame(gameLoop);
+  }
+
+  updatePlayer();
+  gameLoop();
+</script>
+
+</body>
+</html>
