@@ -1,273 +1,311 @@
-<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Formula 1 Racing</title>
+<meta charset="UTF-8">
+<title>Racing Game</title>
 
-  <!-- MOBILE OPTIMIZATION -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      user-select: none;
-    }
+<style>
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
 
-    #score {
-      font-size: 20px;
-      margin: 10px;
-    }
+/* ===== LAYOUT ===== */
+#container {
+  display: flex;
+  height: 100vh;
+}
 
-    #game {
-      width: 90vw;
-      max-width: 360px;
-      height: 70vh;
-      max-height: 600px;
-      margin: auto;
-      background: #444;
-      position: relative;
-      overflow: hidden;
-      border: 3px solid white;
-      touch-action: none;
-    }
+/* ===== ADMIN PANEL ===== */
+#admin {
+  width: 200px;
+  background: #1c1c1c;
+  padding: 10px;
+  border-right: 2px solid red;
+  display: none;
+}
 
-    /* ROAD LINES (VISUAL ONLY) */
-    .road-line {
-      width: 6px;
-      height: 80px;
-      background: white;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0.8;
-    }
+#admin h3 {
+  margin-top: 0;
+  color: red;
+  text-align: center;
+}
 
-    /* PLAYER */
-    #player {
-      width: 60px;
-      height: 100px;
-      position: absolute;
-      bottom: 20px;
-      left: 150px;
-      pointer-events: none;
-    }
+#admin button, #admin input {
+  width: 100%;
+  margin: 6px 0;
+  padding: 8px;
+  font-size: 14px;
+}
 
-    /* ENEMIES */
-    .enemy {
-      width: 60px;
-      height: 100px;
-      position: absolute;
-      top: -120px;
-      object-fit: contain;
-      pointer-events: none;
-    }
+/* ===== GAME AREA ===== */
+#gameWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-    .controls {
-      margin-top: 10px;
-    }
+#score {
+  font-size: 20px;
+  margin: 10px;
+}
 
-    button {
-      font-size: 22px;
-      padding: 14px 30px;
-      margin: 10px;
-      border-radius: 10px;
-      border: none;
-    }
-  </style>
+#game {
+  width: 90vw;
+  max-width: 360px;
+  height: 75vh;
+  max-height: 600px;
+  background: #444;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid white;
+  touch-action: none;
+}
+
+/* ===== VISUAL LANES ===== */
+.lane {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  background: rgba(255,255,255,0.3);
+}
+.lane.left { left: 33%; }
+.lane.right { left: 66%; }
+
+/* ===== PLAYER ===== */
+#player {
+  width: 60px;
+  height: 100px;
+  position: absolute;
+  bottom: 20px;
+  left: 150px;
+}
+
+/* ===== ENEMY ===== */
+.enemy {
+  width: 60px;
+  height: 100px;
+  position: absolute;
+  top: -120px;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  margin: 8px;
+}
+.controls button {
+  font-size: 20px;
+  padding: 12px 30px;
+  margin: 5px;
+  border-radius: 10px;
+  border: none;
+}
+
+/* MOBILE ADMIN BUTTON */
+#adminBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+}
+</style>
 </head>
 
 <body>
 
-<div id="score">Score: 0</div>
+<button id="adminBtn">?</button>
 
-<div id="game">
-  <div class="road-line"></div>
-  <div class="road-line"></div>
-  <div class="road-line"></div>
+<div id="container">
 
-  <img id="player" src="player.png">
+  <!-- ADMIN PANEL -->
+  <div id="admin">
+    <h3>ADMIN</h3>
+    <button onclick="speed += 1">Speed +</button>
+    <button onclick="speed = Math.max(1, speed - 1)">Speed -</button>
+    <button onclick="godMode = !godMode">God Mode</button>
+    <button onclick="toggleEnemies()">Toggle Enemies</button>
+    <button onclick="location.reload()">Reset</button>
+  </div>
 
-  <img class="enemy">
-  <img class="enemy">
-  <img class="enemy">
-  <img class="enemy">
+  <!-- GAME -->
+  <div id="gameWrapper">
+    <div id="score">Score: 0</div>
+
+    <div id="game">
+      <div class="lane left"></div>
+      <div class="lane right"></div>
+
+      <img id="player" src="player.png">
+
+      <img class="enemy">
+      <img class="enemy">
+      <img class="enemy">
+      <img class="enemy">
+    </div>
+
+    <div class="controls">
+      <button id="leftBtn">?</button>
+      <button id="rightBtn">?</button>
+    </div>
+  </div>
 </div>
 
-<div class="controls">
-  <button id="leftBtn">? LEFT</button>
-  <button id="rightBtn">RIGHT ?</button>
-</div>
-
-<!-- ?? SOUND EFFECTS -->
+<!-- SOUNDS -->
 <audio id="engine" loop>
   <source src="https://actions.google.com/sounds/v1/transportation/car_engine.ogg">
 </audio>
-
 <audio id="crash">
   <source src="https://actions.google.com/sounds/v1/impacts/crash.ogg">
 </audio>
 
-<audio id="click">
-  <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
-</audio>
-
 <script>
-  const game = document.getElementById("game");
-  const player = document.getElementById("player");
-  const enemies = document.querySelectorAll(".enemy");
-  const lines = document.querySelectorAll(".road-line");
-  const scoreText = document.getElementById("score");
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const enemies = document.querySelectorAll(".enemy");
+const scoreText = document.getElementById("score");
+const admin = document.getElementById("admin");
 
-  const engineSound = document.getElementById("engine");
-  const crashSound = document.getElementById("crash");
-  const clickSound = document.getElementById("click");
+const engine = document.getElementById("engine");
+const crash = document.getElementById("crash");
 
-  let playerX = 150;
-  let speed = 4;
-  let score = 0;
-  let running = true;
+/* ===== GAME STATE ===== */
+let playerX = 150;
+let speed = 4;
+let score = 0;
+let running = true;
+let godMode = false;
+let enemiesOn = true;
 
-  const moveStep = 12;
-  const hitboxPadding = 15;
+const moveStep = 14;
+const hitbox = 18;
 
-  const enemyImages = [
-    "enemy1.png",
-    "enemy2.png",
-    "enemy3.png",
-    "enemy4.png"
-  ];
+/* ===== ENEMIES ===== */
+const enemyImages = ["enemy1.png","enemy2.png","enemy3.png","enemy4.png"];
+let enemyData = [];
 
-  let enemyData = [];
-
-  enemies.forEach((enemy, i) => {
-    enemy.src = enemyImages[i];
-    enemyData.push({
-      el: enemy,
-      x: Math.random() * 300,
-      y: -150 * (i + 1)
-    });
+enemies.forEach((e,i)=>{
+  e.src = enemyImages[i];
+  enemyData.push({
+    el: e,
+    x: Math.random() * 280,
+    y: -200 * (i+1)
   });
+});
 
-  let lineY = [0, 200, 400];
-  lines.forEach((line, i) => line.style.top = lineY[i] + "px");
-
-  function updatePlayer() {
-    player.style.left = playerX + "px";
+/* ===== ADMIN ===== */
+adminBtn.onclick = () => {
+  const pin = prompt("Enter PIN");
+  if (pin === "1243") {
+    admin.style.display = admin.style.display === "block" ? "none" : "block";
   }
+};
 
-  function moveLines() {
-    lines.forEach((line, i) => {
-      lineY[i] += speed;
-      if (lineY[i] > game.clientHeight) lineY[i] = -80;
-      line.style.top = lineY[i] + "px";
-    });
-  }
+function toggleEnemies() {
+  enemiesOn = !enemiesOn;
+  enemies.forEach(e => e.style.display = enemiesOn ? "block" : "none");
+}
 
-  function moveEnemies() {
-    enemyData.forEach(e => {
-      e.y += speed;
-      e.el.style.top = e.y + "px";
-      e.el.style.left = e.x + "px";
+/* ===== PLAYER ===== */
+function updatePlayer() {
+  player.style.left = playerX + "px";
+}
 
-      if (e.y > game.clientHeight) {
-        e.y = -120;
-        e.x = Math.random() * (game.clientWidth - 60);
-        e.el.src = enemyImages[Math.floor(Math.random() * enemyImages.length)];
-        score += 10;
-        scoreText.textContent = "Score: " + score;
-      }
-    });
-  }
+/* ===== MOVE ENEMIES ===== */
+function moveEnemies() {
+  if (!enemiesOn) return;
 
-  function checkCollision() {
-    const p = player.getBoundingClientRect();
+  enemyData.forEach(e=>{
+    e.y += speed;
+    e.el.style.top = e.y + "px";
+    e.el.style.left = e.x + "px";
 
-    enemyData.forEach(e => {
-      const r = e.el.getBoundingClientRect();
-
-      if (
-        p.left + hitboxPadding < r.right - hitboxPadding &&
-        p.right - hitboxPadding > r.left + hitboxPadding &&
-        p.top + hitboxPadding < r.bottom - hitboxPadding &&
-        p.bottom - hitboxPadding > r.top + hitboxPadding
-      ) {
-        endGame();
-      }
-    });
-  }
-
-  function endGame() {
-    running = false;
-    engineSound.pause();
-    crashSound.play();
-    setTimeout(() => {
-      alert("Game Over! Score: " + score);
-      location.reload();
-    }, 200);
-  }
-
-  function gameLoop() {
-    if (!running) return;
-    moveLines();
-    moveEnemies();
-    checkCollision();
-    requestAnimationFrame(gameLoop);
-  }
-
-  /* START SOUND AFTER USER INTERACTION (MOBILE RULE) */
-  document.addEventListener("click", () => {
-    engineSound.volume = 0.4;
-    engineSound.play();
-  }, { once: true });
-
-  gameLoop();
-
-  /* KEYBOARD */
-  document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft") playerX -= moveStep;
-    if (e.key === "ArrowRight") playerX += moveStep;
-
-    playerX = Math.max(0, Math.min(game.clientWidth - player.offsetWidth, playerX));
-    updatePlayer();
+    if (e.y > game.clientHeight) {
+      e.y = -120;
+      e.x = Math.random() * (game.clientWidth - 60);
+      score += 10;
+      scoreText.textContent = "Score: " + score;
+    }
   });
+}
 
-  /* BUTTONS */
-  leftBtn.onclick = () => {
-    clickSound.play();
-    playerX -= moveStep;
-    playerX = Math.max(0, playerX);
-    updatePlayer();
-  };
+/* ===== COLLISION ===== */
+function collision() {
+  if (godMode || !enemiesOn) return;
 
-  rightBtn.onclick = () => {
-    clickSound.play();
-    playerX += moveStep;
-    playerX = Math.min(game.clientWidth - player.offsetWidth, playerX);
-    updatePlayer();
-  };
-
-  /* SWIPE */
-  let startX = null;
-
-  game.addEventListener("touchstart", e => {
-    startX = e.touches[0].clientX;
+  const p = player.getBoundingClientRect();
+  enemyData.forEach(e=>{
+    const r = e.el.getBoundingClientRect();
+    if (
+      p.left + hitbox < r.right - hitbox &&
+      p.right - hitbox > r.left + hitbox &&
+      p.top + hitbox < r.bottom - hitbox &&
+      p.bottom - hitbox > r.top + hitbox
+    ) {
+      endGame();
+    }
   });
+}
 
-  game.addEventListener("touchmove", e => {
-    if (!startX) return;
-    let diff = e.touches[0].clientX - startX;
+/* ===== GAME LOOP ===== */
+function loop() {
+  if (!running) return;
+  moveEnemies();
+  collision();
+  requestAnimationFrame(loop);
+}
 
-    if (diff > 30) playerX += moveStep;
-    if (diff < -30) playerX -= moveStep;
+/* ===== END ===== */
+function endGame() {
+  running = false;
+  engine.pause();
+  crash.play();
+  setTimeout(()=>{
+    alert("Game Over! Score: " + score);
+    location.reload();
+  },200);
+}
 
-    playerX = Math.max(0, Math.min(game.clientWidth - player.offsetWidth, playerX));
-    updatePlayer();
-    startX = null;
-  });
+/* ===== CONTROLS ===== */
+leftBtn.onclick = ()=> {
+  playerX -= moveStep;
+  playerX = Math.max(0, playerX);
+  updatePlayer();
+};
+rightBtn.onclick = ()=> {
+  playerX += moveStep;
+  playerX = Math.min(game.clientWidth - player.offsetWidth, playerX);
+  updatePlayer();
+};
+
+document.addEventListener("keydown", e=>{
+  if (e.key === "ArrowLeft") leftBtn.onclick();
+  if (e.key === "ArrowRight") rightBtn.onclick();
+});
+
+/* ===== SWIPE ===== */
+let startX=null;
+game.addEventListener("touchstart", e=> startX = e.touches[0].clientX);
+game.addEventListener("touchmove", e=>{
+  if(!startX) return;
+  let diff = e.touches[0].clientX - startX;
+  if(diff>30) rightBtn.onclick();
+  if(diff<-30) leftBtn.onclick();
+  startX=null;
+});
+
+/* SOUND START */
+document.addEventListener("click",()=>{
+  engine.volume=0.4;
+  engine.play();
+},{once:true});
+
+loop();
 </script>
 
 </body>
